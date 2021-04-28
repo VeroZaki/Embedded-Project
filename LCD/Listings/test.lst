@@ -1,0 +1,322 @@
+C51 COMPILER V9.60.0.0   TEST                                                              06/13/2020 21:14:38 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE TEST
+OBJECT MODULE PLACED IN .\Objects\test.obj
+COMPILER INVOKED BY: C:\D\Programs\Keil\Download\C51\BIN\C51.EXE test.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRIN
+                    -T(.\Listings\test.lst) TABS(2) OBJECT(.\Objects\test.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          
+   3          unsigned char Password[4];
+   4          
+   5          sbit r1 = P1^0;
+   6          sbit r2 = P1^1;
+   7          sbit r3 = P1^2;
+   8          sbit r4 = P1^3;
+   9          
+  10          sbit c1 = P1^4;
+  11          sbit c2 = P1^5;
+  12          sbit c3 = P1^6;
+  13          
+  14          sbit Red = P3^3;
+  15          sbit Green = P3^4;
+  16          
+  17          sbit rs = P3^5;
+  18          sbit rw = P3^6;
+  19          sbit en = P3^7;
+  20          
+  21          sfr lcd = 0xA0;
+  22          
+  23          
+  24          unsigned char count =0;
+  25          unsigned char x = 0;
+  26          unsigned char Max = 3;
+  27          unsigned char Repeat = 4;
+  28          void lcddisplay(unsigned char *s , unsigned char r , unsigned char flag);
+  29          void delay(unsigned int time);
+  30          void lcdcommand(unsigned char val);
+  31          void check();
+  32          void lcddat(unsigned char dat);
+  33          void lcddat2(unsigned char dat);
+  34          
+  35          void delay(unsigned int time){  
+  36   1        unsigned i,j;
+  37   1        for(i=0;i<time;i++)
+  38   1        for(j=0;j<1275;j++);
+  39   1      }
+  40          
+  41          void ToDelay(unsigned char loop){ 
+  42   1        unsigned char i;
+  43   1        for(i=0;i<loop;i++){
+  44   2          TMOD=0x01;
+  45   2          TL0=0xFE;
+  46   2          TH0=0xA5;
+  47   2          TR0=1;
+  48   2          while(TF0==0);
+  49   2          TR0=0;
+  50   2          TF0=0;
+  51   2        }
+  52   1      }
+  53          
+  54          void lcdcommand(unsigned char vale){
+C51 COMPILER V9.60.0.0   TEST                                                              06/13/2020 21:14:38 PAGE 2   
+
+  55   1        lcd = vale;
+  56   1        rs = 0;
+  57   1        rw = 0;
+  58   1        en = 1;
+  59   1        ToDelay(1);
+  60   1        en = 0;
+  61   1      }
+  62          
+  63          void lcddisplay(unsigned char *s , unsigned char r , unsigned char flag){  
+  64   1        if(flag == 0){
+  65   2          unsigned char w;
+  66   2          for(w=0;w<r;w++){
+  67   3            lcddat(s[w]);
+  68   3            ToDelay(1);
+  69   3          }
+  70   2        }
+  71   1        else{
+  72   2          unsigned char z;
+  73   2          for(z=0;z<r;z++){
+  74   3            lcddat2(s[z]);
+  75   3            ToDelay(1);
+  76   3          }
+  77   2        }
+  78   1      }
+  79          
+  80          void SerialCommunication(unsigned char *value , unsigned char length){ 
+  81   1        unsigned char k;
+  82   1        SCON = 0x50;
+  83   1        TMOD = 0X20;
+  84   1        TH1 = -3;       
+  85   1        TR1 = 1;
+  86   1        for(k=0;k<length;k++){
+  87   2          SBUF = (value[k]);
+  88   2          delay(1);
+  89   2        }
+  90   1        while(TI==0);
+  91   1        TI = 0;
+  92   1      }
+  93          
+  94          void Serial(unsigned char value){   
+  95   1        SCON = 0x50;
+  96   1        TMOD = 0X20;
+  97   1        TH1 = -3;      
+  98   1        TR1 = 1;
+  99   1        SBUF = value;
+ 100   1        while(TI==0);
+ 101   1        TI = 0;
+ 102   1      }
+ 103          
+ 104          void CountDown(unsigned char disp , unsigned char disp2){  
+ 105   1        unsigned char i , j;
+ 106   1        for(j=disp2;j>=48;j--){
+ 107   2          lcdcommand(0xC8);
+ 108   2          lcddat2(j);
+ 109   2          for(i=disp;i>=48;i--){
+ 110   3            lcdcommand(0xC9);
+ 111   3            lcddat2(i);
+ 112   3            Serial(j);
+ 113   3            Serial(i);
+ 114   3            SerialCommunication("\r" , 1);
+ 115   3            ToDelay(40);
+ 116   3          }
+C51 COMPILER V9.60.0.0   TEST                                                              06/13/2020 21:14:38 PAGE 3   
+
+ 117   2        }
+ 118   1        lcdcommand(0x01);
+ 119   1      }
+ 120          
+ 121          void check(){   
+ 122   1        if(Password[0]=='2' && Password[1]=='3' && Password[2]=='4' && Password[3]=='5'){
+ 123   2          lcdcommand(0x01);
+ 124   2          lcddisplay("Access Granted",14,0);
+ 125   2          Green = 1;
+ 126   2          SerialCommunication("Access Granted\r" , 14);
+ 127   2          
+ 128   2        }
+ 129   1        else{
+ 130   2          lcdcommand(0x01);
+ 131   2          lcddisplay("Access Denied",13,1);
+ 132   2          Max = Max - 1;
+ 133   2          Red = 1;
+ 134   2          SerialCommunication("Access Denied\r" , 14);
+ 135   2          Red = 0;
+ 136   2          ToDelay(20);
+ 137   2          lcdcommand(0x01);
+ 138   2          if(Max == 2){
+ 139   3           lcddisplay("Two chances",11,1);
+ 140   3           SerialCommunication("Two chances\r" , 12); 
+ 141   3          }
+ 142   2          else if(Max == 1){
+ 143   3            lcddisplay("One chance",10,1);
+ 144   3            SerialCommunication("One chance\r" , 11); 
+ 145   3          }
+ 146   2          ToDelay(20);
+ 147   2          lcdcommand(0x01);
+ 148   2          if(Max == 0){
+ 149   3            Repeat = Repeat -1;
+ 150   3            lcddisplay("Access Denied!!",15,1);
+ 151   3            SerialCommunication("Access Denied!!\r" , 16);  
+ 152   3            Red = 1;
+ 153   3            ToDelay(2);
+ 154   3            lcdcommand(0x01);
+ 155   3            if(Repeat == 3){
+ 156   4              lcddisplay("Wait for 10 sec",15,1);
+ 157   4              SerialCommunication("Wait for 10 sec\r" , 16);
+ 158   4              ToDelay(2);
+ 159   4              CountDown(57,48);                       
+ 160   4            }
+ 161   3            else if(Repeat == 2){
+ 162   4              lcddisplay("Wait for 30 sec",15,1);
+ 163   4              SerialCommunication("Wait for 30 sec\r" , 16);
+ 164   4              ToDelay(2);
+ 165   4              CountDown(57,50);                      
+ 166   4            }
+ 167   3            else if(Repeat == 1){
+ 168   4              lcddisplay("Wait for 50 sec",15,1);
+ 169   4              SerialCommunication("Wait for 50 sec\r" , 16);
+ 170   4              ToDelay(1);
+ 171   4              CountDown(57,52);                      
+ 172   4            }
+ 173   3            else if(Repeat == 0){
+ 174   4              lcddisplay("Refused !!!",11,1);
+ 175   4              SerialCommunication("Refused !!!\r" , 12);
+ 176   4              return ;
+ 177   4            }
+ 178   3            Max=3;
+C51 COMPILER V9.60.0.0   TEST                                                              06/13/2020 21:14:38 PAGE 4   
+
+ 179   3            Red=0;
+ 180   3          }
+ 181   2          
+ 182   2          lcddisplay("Enter the pin:",14,1);
+ 183   2          lcdcommand(0xC0);
+ 184   2          x=0;
+ 185   2          count =0;
+ 186   2        }
+ 187   1      }
+ 188          void lcddat(unsigned char dat){      
+ 189   1        lcd = dat;
+ 190   1        rs = 1;
+ 191   1        rw = 0;
+ 192   1        en = 1;
+ 193   1        ToDelay(1);
+ 194   1        en=0;
+ 195   1        Password[x] = dat;
+ 196   1        x = x + 1;
+ 197   1        count = count + 1;
+ 198   1        if(count == 4){
+ 199   2          ToDelay(20);
+ 200   2          check();
+ 201   2        }
+ 202   1      }
+ 203          
+ 204          void lcddat2(unsigned char dat){
+ 205   1        lcd = dat;
+ 206   1        rs = 1;
+ 207   1        rw = 0;
+ 208   1        en = 1;
+ 209   1        ToDelay(1);
+ 210   1        en=0;
+ 211   1        
+ 212   1      }
+ 213          
+ 214          void main(){
+ 215   1        Red = 0;
+ 216   1        Green = 0;
+ 217   1        lcd = 0x00;
+ 218   1        lcdcommand(0x38);
+ 219   1        ToDelay(1);
+ 220   1        lcdcommand(0x0E);
+ 221   1        ToDelay(1);
+ 222   1        lcdcommand(0x01);
+ 223   1        ToDelay(1);
+ 224   1        lcdcommand(0x0C);
+ 225   1        ToDelay(1);
+ 226   1        lcdcommand(0x80);  
+ 227   1        ToDelay(1);
+ 228   1        lcddisplay("Enter the pin:",14,1);
+ 229   1        ToDelay(10);
+ 230   1        lcdcommand(0xC0);
+ 231   1        ToDelay(10);
+ 232   1        while(1){
+ 233   2          r1 = 0; r2=1; r3=1; r4=1;
+ 234   2          if(c1 == 0){
+ 235   3            lcddat('1');  
+ 236   3            ToDelay(10);   
+ 237   3          }
+ 238   2          if(c2 == 0){
+ 239   3            lcddat('2');
+ 240   3            ToDelay(10);
+C51 COMPILER V9.60.0.0   TEST                                                              06/13/2020 21:14:38 PAGE 5   
+
+ 241   3          }
+ 242   2          if(c3 == 0){
+ 243   3            lcddat('3');
+ 244   3            ToDelay(10);
+ 245   3          }
+ 246   2          r1=1; r2=0;
+ 247   2          if(c1 == 0){
+ 248   3            lcddat('4');
+ 249   3            ToDelay(10);
+ 250   3          }
+ 251   2          if(c2 == 0){
+ 252   3            lcddat('5');
+ 253   3            ToDelay(10);
+ 254   3          }
+ 255   2          if(c3 == 0){
+ 256   3            lcddat('6');
+ 257   3            ToDelay(10);
+ 258   3          }
+ 259   2          r2=1; r3=0;
+ 260   2          if(c1 == 0){
+ 261   3            lcddat('7');
+ 262   3            ToDelay(10);
+ 263   3          }
+ 264   2          if(c2 == 0){
+ 265   3            lcddat('8');
+ 266   3            ToDelay(10);
+ 267   3          }
+ 268   2          if(c3 == 0){
+ 269   3            lcddat('9');
+ 270   3            ToDelay(10);
+ 271   3          }
+ 272   2          r3=1; r4=0;
+ 273   2          if(c1 == 0){
+ 274   3            lcddat('*');
+ 275   3            ToDelay(10);
+ 276   3          }
+ 277   2          if(c2 == 0){
+ 278   3            lcddat('0');
+ 279   3            ToDelay(10);
+ 280   3          }
+ 281   2          if(c3 == 0){ 
+ 282   3            lcddat('#');
+ 283   3            ToDelay(10);
+ 284   3          }
+ 285   2          r4=1;
+ 286   2        }
+ 287   1        
+ 288   1      }
+ 289          
+ 290          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1012    ----
+   CONSTANT SIZE    =    282    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      8      14
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
